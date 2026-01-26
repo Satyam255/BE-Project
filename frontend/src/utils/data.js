@@ -16,54 +16,54 @@ import {
 export const jobSeekerFeatures = [
   {
     icon: Search,
-    title: "Smart Job Matching",
+    title: "Connect with Opportunities",
     description:
-      "AI-powered algorithm matches you with relevant opportunities based on your skills and preferences.",
+      "Discover job opportunities from multiple companies across different roles and industries.",
   },
   {
     icon: FileText,
-    title: "Resume Builder",
+    title: "Easy Apply",
     description:
-      "Create professional resumes with our intuitive builder and templates designed by experts.",
+      "Apply to jobs quickly using your profile without filling long forms every time.",
   },
   {
-    icon: MessageSquare,
-    title: "Direct Communication",
+    icon: Users,
+    title: "Wide Range of Jobs",
     description:
-      "Connect directly with hiring managers and recruiters through our secure messaging platform.",
+      "Browse a large collection of job listings including full-time, part-time, remote, and internships.",
   },
   {
-    icon: Award,
-    title: "Skill Assessment",
+    icon: Shield,
+    title: "Genuine Job Listings",
     description:
-      "Showcase your abilities with verified skill tests and earn badges that employers trust.",
+      "All job postings are reviewed to ensure they come from real and verified employers.",
   },
 ];
 
 export const employerFeatures = [
   {
     icon: Users,
-    title: "Talent Pool Access",
+    title: "Access to Candidates",
     description:
-      "Access our vast database of pre-screened candidates and find the perfect fit for your team.",
+      "Reach a growing pool of job seekers looking for opportunities in different domains.",
   },
   {
-    icon: BarChart3,
-    title: "Analytics Dashboard",
+    icon: Briefcase,
+    title: "Post Jobs Easily",
     description:
-      "Track your hiring performance with detailed analytics and insights on candidate engagement.",
+      "Create and publish job listings in just a few steps.",
   },
   {
-    icon: Shield,
-    title: "Verified Candidates",
+    icon: FileText,
+    title: "Manage Applications",
     description:
-      "All candidates undergo background verification to ensure you're hiring trustworthy professionals.",
+      "View, track, and manage all candidate applications in one place.",
   },
   {
     icon: Clock,
-    title: "Quick Hiring",
+    title: "Faster Hiring Process",
     description:
-      "Streamlined hiring process reduces time-to-hire by 60% with automated screening tools.",
+      "Reduce manual work by handling hiring workflows directly on the platform.",
   },
 ];
 

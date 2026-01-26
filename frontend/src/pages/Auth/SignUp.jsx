@@ -2,8 +2,14 @@ import React, { useState } from 'react'
 import { motion } from 'framer-motion'
 import { User, Mail, Lock, Upload, Eye, EyeOff, UserCheck, Building2, Loader, AlertCircle, CheckCircle } from "lucide-react";
 import { validateAvatar, validateEmail, validatePassword } from '../../utils/helper';
+import axiosInstance from '../../utils/axiosInstance';
+import uploadImage from '../../utils/uploadImage';
+import { API_PATHS } from '../../utils/apiPaths';
+import { useAuth } from '../../context/AuthContext';
 
 const SignUp = () => {
+
+  const { login } = useAuth();
 
   const [formData, setFormData] = useState({
     fullName: "",
@@ -109,6 +115,43 @@ const SignUp = () => {
     setFormState((prev) => ({ ...prev, loading: true }));
 
     try {
+
+        let avatarUrl = "";
+
+        // Upload image if present
+        if(formData.avatar) {
+          const imgUploadRes = await uploadImage(formData.avatar);
+          avatarUrl = imgUploadRes.imageUrl || "";
+        }
+
+        const response = await axiosInstance.post(API_PATHS.AUTH.REGISTER, {
+          email: formData.email,
+          name: formData.fullName,
+          password: formData.password,
+          role: formData.role,
+          avatar: avatarUrl || "",
+        });
+
+        setFormState((prev) => ({
+          ...prev,
+          loading: false,
+          success:  true,
+          errors: {},
+        }
+      ))
+
+      const { token } = response.data;
+
+      if(token) {
+        login(response.data, token);
+
+        // Redirect base on role
+        setTimeout(() => {
+        const redirectPath =
+          formData.role === "employer" ? "/employer-dashboard" : "/find-jobs";
+        window.location.href = redirectPath;
+      }, 2000);
+      }
 
     } catch (error) {
       console.log("Error in handleSubmit: ", error);

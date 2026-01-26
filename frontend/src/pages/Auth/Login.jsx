@@ -2,8 +2,13 @@ import React, { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Mail, Lock, Eye, EyeOff, Loader, AlertCircle, CheckCircle } from "lucide-react";
 import { validateEmail, validatePassword } from '../../utils/helper';
+import axiosInstance from '../../utils/axiosInstance';
+import { API_PATHS } from '../../utils/apiPaths';
+import { useAuth } from '../../context/AuthContext';
 
 const Login = () => {
+
+  const { login } = useAuth();
 
   const [formData, setFormData] = useState({
     email: "",
@@ -18,7 +23,7 @@ const Login = () => {
     success: false,
   })
 
-  
+
   // Handle input
 
   const handleInputChange = (e) => {
@@ -58,19 +63,94 @@ const Login = () => {
     setFormState(prev => ({ ...prev, loading: true }));
 
     try {
-      // login api integration later
+      const response = await axiosInstance.post(API_PATHS.AUTH.LOGIN, {
+        email: formData.email,
+        password: formData.password,
+      });
+
+      const { token, role } = response.data;
+
+      // Save user in context
+      login(response.data, token);
+
+      // Update UI state
+      setFormState(prev => ({
+        ...prev,
+        loading: false,
+        success: true,
+        errors: {},
+      }));
+
+      // Redirect based on role
+      setTimeout(() => {
+        const redirectPath =
+          role === "employer" ? "/employer-dashboard" : "/find-jobs";
+        window.location.href = redirectPath;
+      }, 1500);
+
     } catch (error) {
       setFormState(prev => ({
         ...prev,
         loading: false,
         errors: {
-          submit: error.response?.data.message || "Login Failed. Please check your credentials."
-        }
-      }))
+          submit:
+            error.response?.data?.message ||
+            "Login Failed. Please check your credentials.",
+        },
+      }));
     }
-  }
+  };
 
-  if(formState.success) {
+
+  // const handleSubmit = async (e) => {
+  //   e.preventDefault();
+
+  //   if (!validateForm()) return;
+
+  //   setFormState(prev => ({ ...prev, loading: true }));
+
+  //   try {
+  //     const response = await axiosInstance.post(API_PATHS.AUTH.LOGIN, {
+  //       email: formData.email,
+  //       password: formData.password,
+  //       rememberMe: formData.rememberMe
+  //     });
+
+  //     setFormData(prev => ({
+  //       ...prev, 
+  //       loading: false,
+  //       success: true,
+  //       errors: {},
+  //     }))
+
+  //     if(token) {
+  //       login(response.data, token);
+
+  //       // Redirect based on role
+  //       setTimeout(() => {
+  //         window.location.href = role === 'employer' ? "/employer-dashboard" : "/find-jobs";
+  //       }, 2000);
+
+  //       // Redirect based on user role
+  //       setTimeout(() => {
+  //         const redirectPath = User.role === 'employer' ? "/employer-dashboard" : "/find-jobs";
+
+  //         window.location.href = redirectPath;
+  //       }, 1500);
+  //     }
+
+  //   } catch (error) {
+  //     setFormState(prev => ({
+  //       ...prev,
+  //       loading: false,
+  //       errors: {
+  //         submit: error.response?.data.message || "Login Failed. Please check your credentials."
+  //       }
+  //     }))
+  //   }
+  // }
+
+  if (formState.success) {
     return (
       <div className='min-h-screen flex items-center justify-center bg-gray-50 px-4'>
         <motion.div
@@ -78,12 +158,12 @@ const Login = () => {
           animate={{ opacity: 1, scale: 1 }}
           className='bg-white p-8 rounded-xl shadow-lg max-w-md w-full text-center'
         >
-          <CheckCircle className='w-16 h-16 text-green-500 mx-auto mb-4'/>
+          <CheckCircle className='w-16 h-16 text-green-500 mx-auto mb-4' />
           <h2 className='text-2xl font-bold text-gray-900 mb-2'>Welcome Back</h2>
           <p className='text-gray-600 mb-4'>
             You have been successfully logged in.
           </p>
-          <div className='animate-spin w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full mx-auto'/>
+          <div className='animate-spin w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full mx-auto' />
           <p className='text-sm text-gray-500 mt-2'>Redirecting to your dashboard...</p>
         </motion.div>
       </div>
