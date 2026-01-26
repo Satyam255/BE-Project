@@ -6,6 +6,9 @@ import connectDB from "./config/db.js"
 import authRoutes from "./routes/auth.route.js"
 import userRoutes from "./routes/user.route.js"
 import jobRoutes from "./routes/job.route.js"
+import applicationRoutes from "./routes/application.route.js"
+import savedJobRoutes from "./routes/savedJob.route.js"
+import analyticsRoutes from "./routes/analytics.route.js"
 import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -32,6 +35,9 @@ app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use("/api/user", userRoutes)
 app.use("/api/jobs", jobRoutes);
+app.use("/api/applications", applicationRoutes);
+app.use("/api/save-jobs", savedJobRoutes);
+app.use("/api/analytics", analyticsRoutes);
 
 // Server uploads folder
 app.use("/uploads", express.static(path.join(__dirname, "uploads"), {}));
