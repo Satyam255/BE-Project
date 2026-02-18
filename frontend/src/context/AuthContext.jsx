@@ -53,7 +53,7 @@ export const AuthProvider = ({ children }) => {
 
         setUser(null);
         setIsAuthenticated(false);
-        window.localStorage.href = '/'
+        window.location.href = '/'
     }
 
     const updateUser = (updatedUserData) => {

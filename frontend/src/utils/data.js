@@ -18,7 +18,7 @@ export const jobSeekerFeatures = [
     icon: Search,
     title: "Connect with Opportunities",
     description:
-      "Discover job opportunities from multiple companies across different roles and industries.",
+      "Discover job opportunities from multiple companies for different roles",
   },
   {
     icon: FileText,
@@ -30,7 +30,7 @@ export const jobSeekerFeatures = [
     icon: Users,
     title: "Wide Range of Jobs",
     description:
-      "Browse a large collection of job listings including full-time, part-time, remote, and internships.",
+      "Browse a large collection of job listings including full-time, remote, and internships.",
   },
   {
     icon: Shield,

@@ -8,21 +8,21 @@ const Analytics = () => {
         {
             icon: Users,
             title: 'Active Users',
-            value: '50,000+',
+            value: '37,000+',
             growth: '+20%',
             color: 'blue'
         },
         {
             icon: Briefcase,
             title: 'Jobs Posted',
-            value: '20,000+',
+            value: '24,000+',
             growth: '+30%',
             color: 'purple'
         },
         {
             icon: Target,
             title: 'Successful Hires',
-            value: '15,000+',
+            value: '13,000+',
             growth: '+15%',
             color: 'green'
         },
