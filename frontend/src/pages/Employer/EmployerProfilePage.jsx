@@ -125,7 +125,7 @@ const EmployerProfilePage = () => {
         <div className="max-w-5xl mx-auto">
 
           {/* Header */}
-          <div className="bg-gradient-to-r from-blue-500 to-blue-600 px-8 py-6 flex justify-between items-center rounded-t-2xl shadow-md">
+          <div className="bg-linear-to-r from-blue-500 to-blue-600 px-8 py-6 flex justify-between items-center rounded-t-2xl shadow-md">
             <h1 className="text-xl font-semibold text-white">
               Employer Profile
             </h1>

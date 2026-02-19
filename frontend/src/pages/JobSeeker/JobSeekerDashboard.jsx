@@ -1,280 +1,241 @@
-import React from "react";
-import { motion } from "framer-motion";
-import {
-  Briefcase,
-  Bookmark,
-  FileText,
-  Bell,
-  TrendingUp,
-  MapPin,
-  Calendar,
-  User,
-} from "lucide-react";
-import Header from "../LandingPage/components/Header";
-
-const stats = [
-  { title: "Applied Jobs", value: 12, icon: Briefcase },
-  { title: "Saved Jobs", value: 5, icon: Bookmark },
-  { title: "Profile Strength", value: "80%", icon: FileText },
-  { title: "Notifications", value: 3, icon: Bell },
-];
-
-const recommendedJobs = [
-  { title: "Frontend Developer", company: "TechCorp", location: "Remote" },
-  { title: "React Developer", company: "StartupX", location: "Bangalore" },
-  { title: "UI Designer", company: "DesignHub", location: "Mumbai" },
-];
-
-const upcomingInterviews = [
-  { role: "React Developer", company: "TechCorp", date: "28 Jan 2026" },
-  { role: "Frontend Engineer", company: "InnoSoft", date: "02 Feb 2026" },
-];
-
-const container = {
-  hidden: { opacity: 0 },
-  show: { opacity: 1, transition: { staggerChildren: 0.08 } },
-};
-
-const item = {
-  hidden: { opacity: 0, y: 20 },
-  show: { opacity: 1, y: 0 },
-};
+import React, { useEffect, useState } from 'react';
+import { useAuth } from '../../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import { Filter, Grid, List, Search } from 'lucide-react';
+import FilterContent from './components/FilterContent';
+import LoadingSpinner from './components/LoadingSpinner';
+import axiosInstance from '../../utils/axiosInstance';
+import { API_PATHS } from '../../utils/apiPaths';
+import toast from 'react-hot-toast';
+import Navbar from '../../components/layout/Navbar';
+import SearchHeader from './components/SearchHeader';
+import JobCard from './components/JobCard';
 
 const JobSeekerDashboard = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  const [jobs, setJobs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useState("grid");
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
+  const [error, setError] = useState(null);
+
+  const [filters, setFilters] = useState({
+    keyword: "",
+    location: "",
+    category: "",
+    type: "",
+    minSalary: "",
+    maxSalary: "",
+  });
+
+  const [expandedSections, setExpandedSections] = useState({
+    jobType: true,
+    salary: true,
+    categories: true,
+  });
+
+  const fetchJobs = async (filterParams = {}) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const params = new URLSearchParams();
+
+      if (filterParams.keyword) params.append("keyword", filterParams.keyword);
+      if (filterParams.location) params.append("location", filterParams.location);
+      if (filterParams.minSalary) params.append("minSalary", filterParams.minSalary);
+      if (filterParams.maxSalary) params.append("maxSalary", filterParams.maxSalary);
+      if (filterParams.type) params.append("type", filterParams.type);
+      if (filterParams.category) params.append("category", filterParams.category);
+      if (user) params.append("userId", user?._id);
+
+      const response = await axiosInstance.get(
+        `${API_PATHS.JOBS.GET_ALL_JOBS}?${params.toString()}`
+      );
+
+      const jobsData = Array.isArray(response.data)
+        ? response.data
+        : response.data.jobs || [];
+
+      setJobs(jobsData);
+    } catch (err) {
+      console.error("Error fetching jobs:", err);
+      setError("Failed to fetch jobs.");
+      setJobs([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      fetchJobs(filters);
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [filters, user]);
+
+  const handleFilterChange = (key, value) => {
+    setFilters((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const toggleSection = (section) => {
+    setExpandedSections((prev) => ({
+      ...prev,
+      [section]: !prev[section],
+    }));
+  };
+
+  const clearAllFilters = () => {
+    setFilters({
+      keyword: "",
+      location: "",
+      category: "",
+      type: "",
+      minSalary: "",
+      maxSalary: "",
+    });
+  };
+
+  const toggleSaveJobs = async (jobId, isCurrentlySaved) => {
+    try {
+      if (isCurrentlySaved) {
+        await axiosInstance.delete(API_PATHS.JOBS.UNSAVE_JOB(jobId));
+        toast.success("Job removed successfully");
+      } else {
+        await axiosInstance.post(API_PATHS.JOBS.SAVE_JOB(jobId));
+        toast.success("Job saved successfully");
+      }
+
+      fetchJobs(filters);
+    } catch (error) {
+      console.error("Error toggling save:", error);
+      toast.error("Something went wrong!");
+    }
+  };
+
+  const applyToJob = async (jobId) => {
+    try {
+      await axiosInstance.post(API_PATHS.APPLICATIONS.APPLY_TO_JOB(jobId));
+      toast.success("Applied successfully");
+      fetchJobs(filters);
+    } catch (error) {
+      const errorMsg = error?.response?.data?.message;
+      toast.error(errorMsg || "Failed to apply");
+    }
+  };
+
+  if (jobs.length === 0 && loading) return <LoadingSpinner />;
+
   return (
-    <div className="min-h-screen bg-gray-50 p-6 space-y-8">
-      {/* Header */}
-      <Header />
-      <motion.div
-        initial={{ opacity: 0, y: -15 }}
-        animate={{ opacity: 1, y: 0 }}
-      >
-        <h1 className="text-2xl font-bold text-gray-900">
-          Welcome back 👋
-        </h1>
-      </motion.div>
+    <div className='bg-linear-to-br from-blue-50 via-white to-purple-50'>
+      <Navbar />
+      <div className='min-h-screen mt-16'>
+        <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 lg:py-8'>
 
-      {/* Stats */}
-      <motion.div
-        variants={container}
-        initial="hidden"
-        animate="show"
-        className="mt-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
-      >
-        {stats.map((stat, i) => {
-          const Icon = stat.icon;
-          return (
-            <motion.div
-              key={i}
-              variants={item}
-              whileHover={{ scale: 1.03 }}
-              className="bg-white rounded-xl shadow p-5 flex justify-between items-center"
-            >
-              <div>
-                <p className="text-sm text-gray-500">{stat.title}</p>
-                <p className="text-2xl font-semibold">{stat.value}</p>
-              </div>
-              <div className="p-3 bg-blue-50 rounded-lg">
-                <Icon className="w-6 h-6 text-blue-600" />
-              </div>
-            </motion.div>
-          );
-        })}
-      </motion.div>
+          <SearchHeader
+            filters={filters}
+            handleFilterChange={handleFilterChange}
+          />
 
-      {/* Main Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Recommended Jobs */}
-        <motion.div
-          variants={item}
-          initial="hidden"
-          animate="show"
-          className="lg:col-span-2 bg-white rounded-xl shadow p-6"
-        >
-          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-blue-600" />
-            Recommended Jobs
-          </h2>
+          <div className='flex gap-6 lg:gap-8'>
 
-          <div className="space-y-4">
-            {recommendedJobs.map((job, i) => (
-              <motion.div
-                key={i}
-                whileHover={{ x: 5 }}
-                className="flex justify-between items-center border-b pb-2"
-              >
-                <div>
-                  <p className="font-medium">{job.title}</p>
-                  <p className="text-sm text-gray-500">
-                    {job.company} • {job.location}
-                  </p>
-                </div>
-                <button className="text-sm text-blue-600 font-medium">
-                  View
-                </button>
-              </motion.div>
-            ))}
-          </div>
-        </motion.div>
-
-        {/* Profile Card */}
-        <motion.div
-          variants={item}
-          initial="hidden"
-          animate="show"
-          className="bg-white rounded-xl shadow p-6"
-        >
-          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-            <User className="w-5 h-5 text-blue-600" />
-            Profile
-          </h2>
-
-          <div className="space-y-3">
-            <p className="text-sm text-gray-600">
-              Complete your profile to improve visibility.
-            </p>
-            <div className="w-full bg-gray-200 rounded-full h-2">
-              <div className="bg-blue-600 h-2 rounded-full w-[80%]" />
-            </div>
-            <button className="w-full mt-3 py-2 border rounded-lg text-sm">
-              Edit Profile
-            </button>
-          </div>
-        </motion.div>
-      </div>
-
-      {/* Bottom Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-        {/* Recent Applications */}
-        <motion.div
-          variants={item}
-          initial="hidden"
-          animate="show"
-          className="bg-white rounded-xl shadow p-6"
-        >
-          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-            <MapPin className="w-5 h-5 text-blue-600" />
-            Recent Applications
-          </h2>
-
-          <div className="space-y-3">
-            {["React Developer", "Frontend Engineer", "UI Designer"].map(
-              (job, i) => (
-                <div
-                  key={i}
-                  className="flex justify-between border-b pb-2"
-                >
-                  <span>{job}</span>
-                  <span className="text-sm text-gray-500">
-                    Applied
-                  </span>
-                </div>
-              )
-            )}
-          </div>
-        </motion.div>
-
-              {/* Browse Jobs */}
-      <motion.div
-        variants={container}
-        initial="hidden"
-        animate="show"
-        className="bg-white rounded-xl shadow p-6"
-      >
-        <h2 className="text-lg font-semibold mb-6 flex items-center gap-2">
-          <Briefcase className="w-5 h-5 text-blue-600" />
-          Browse Jobs
-        </h2>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[
-            {
-              title: "Frontend Developer",
-              company: "TechCorp",
-              location: "Remote",
-              type: "Full-Time",
-              salary: "6–10 LPA",
-            },
-            {
-              title: "React Engineer",
-              company: "StartupX",
-              location: "Bangalore",
-              type: "Full-Time",
-              salary: "8–12 LPA",
-            },
-            {
-              title: "UI/UX Designer",
-              company: "DesignHub",
-              location: "Mumbai",
-              type: "Contract",
-              salary: "4–6 LPA",
-            },
-            {
-              title: "Software Intern",
-              company: "Innovate Labs",
-              location: "Pune",
-              type: "Internship",
-              salary: "15k/month",
-            },
-            {
-              title: "Backend Developer",
-              company: "CloudWorks",
-              location: "Remote",
-              type: "Full-Time",
-              salary: "7–11 LPA",
-            },
-            {
-              title: "Product Engineer",
-              company: "BuildNow",
-              location: "Hyderabad",
-              type: "Full-Time",
-              salary: "10–14 LPA",
-            },
-          ].map((job, i) => (
-            <motion.div
-              key={i}
-              variants={item}
-              whileHover={{ scale: 1.03 }}
-              className="border rounded-xl p-5 space-y-3"
-            >
-              <div>
-                <h3 className="font-semibold text-gray-900">
-                  {job.title}
+            {/* Sidebar */}
+            <div className='hidden lg:block w-80 shrink-0'>
+              <div className='bg-white/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/20 p-6 sticky top-20'>
+                <h3 className='font-bold text-gray-900 text-xl mb-6'>
+                  Filter Jobs
                 </h3>
-                <p className="text-sm text-gray-500">
-                  {job.company}
+
+                <FilterContent
+                  toggleSection={toggleSection}
+                  clearAllFilters={clearAllFilters}
+                  expandedSections={expandedSections}
+                  filters={filters}
+                  handleFilterChange={handleFilterChange}
+                />
+              </div>
+            </div>
+
+            {/* Jobs Section */}
+            <div className='flex-1 min-w-0'>
+
+              <div className='flex flex-col lg:flex-row lg:items-center justify-between mb-6 lg:mb-8 gap-4'>
+                <p className='text-gray-600'>
+                  Showing{" "}
+                  <span className='font-bold text-gray-900'>
+                    {jobs.length}
+                  </span>{" "}
+                  jobs
                 </p>
-              </div>
 
-              <div className="text-sm text-gray-600 space-y-1">
-                <div className="flex items-center gap-2">
-                  <MapPin className="w-4 h-4" />
-                  {job.location}
+                <div className='flex items-center gap-4'>
+
+                  <div className='flex items-center border border-gray-200 rounded-xl p-1 bg-white'>
+                    <button
+                      onClick={() => setViewMode("grid")}
+                      className={`p-2 rounded-lg ${
+                        viewMode === "grid"
+                          ? "bg-blue-600 text-white"
+                          : "text-gray-600"
+                      }`}
+                    >
+                      <Grid className='h-4 w-4' />
+                    </button>
+
+                    <button
+                      onClick={() => setViewMode("list")}
+                      className={`p-2 rounded-lg ${
+                        viewMode === "list"
+                          ? "bg-blue-600 text-white"
+                          : "text-gray-600"
+                      }`}
+                    >
+                      <List className='h-4 w-4' />
+                    </button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Calendar className="w-4 h-4" />
-                  {job.type}
+              </div>
+
+              {jobs.length === 0 ? (
+                <div className='text-center py-20 bg-white/60 rounded-2xl'>
+                  <Search className='w-16 h-16 mx-auto text-gray-400 mb-6' />
+                  <h3 className='text-2xl font-bold'>No Jobs found</h3>
+                  <button
+                    onClick={clearAllFilters}
+                    className='mt-6 bg-blue-600 text-white px-6 py-3 rounded-xl'
+                  >
+                    Clear All Filters
+                  </button>
                 </div>
-              </div>
+              ) : (
+                <div
+                  className={
+                    viewMode === "grid"
+                      ? "grid grid-cols-1 lg:grid-cols-2 gap-6"
+                      : "space-y-6"
+                  }
+                >
+                  {jobs.map((job) => (
+                    <JobCard
+                      key={job._id}
+                      job={job}
 
-              <p className="text-sm font-medium text-gray-800">
-                Salary: {job.salary}
-              </p>
+                      // ✅ FIXED: Navigation added
+                      onClick={() => navigate(`/job/${job._id}`)}
 
-              <div className="flex gap-3 pt-2">
-                <button className="flex-1 bg-blue-600 text-white text-sm py-2 rounded-lg hover:bg-blue-700">
-                  Apply
-                </button>
-                <button className="flex-1 border text-sm py-2 rounded-lg hover:bg-gray-50">
-                  Save
-                </button>
-              </div>
-            </motion.div>
-          ))}
+                      onToggleSave={() =>
+                        toggleSaveJobs(job._id, job.isSaved)
+                      }
+                      onApply={() => applyToJob(job._id)}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
-      </motion.div>
-
       </div>
     </div>
   );
