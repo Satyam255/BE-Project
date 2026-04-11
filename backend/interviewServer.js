@@ -128,7 +128,7 @@ export default function initInterviewSocket(httpServer) {
           console.log("   Question Limit:", limit || 5);
           console.log(
             "   JD provided:",
-            jobDescription ? "Yes" : "No (using dummy)"
+            jobDescription ? "Yes" : "No (using dummy)",
           );
 
           const jdToUse = jobDescription || DUMMY_JD;
@@ -148,13 +148,13 @@ export default function initInterviewSocket(httpServer) {
               console.log("\n✅ QUESTIONS SELECTED:");
               console.log(
                 "   Keywords:",
-                qsResult.keywords?.map((k) => k.keyword).join(", ")
+                qsResult.keywords?.map((k) => k.keyword).join(", "),
               );
               selectedQuestions.forEach((q, i) => {
                 console.log(
                   `   ${i + 1}. [${q.difficulty}] [${q.topic}] sim=${
                     q.similarity
-                  }`
+                  }`,
                 );
                 console.log(`      Q: ${q.question}`);
               });
@@ -196,7 +196,7 @@ export default function initInterviewSocket(httpServer) {
           console.error("joinInterview Error:", error);
           socket.emit("error", { message: "Failed to start interview" });
         }
-      }
+      },
     );
 
     // ──────────────────────────────────────────
@@ -204,9 +204,8 @@ export default function initInterviewSocket(httpServer) {
     // ──────────────────────────────────────────
     socket.on("chatMessage", async ({ message, interviewId }) => {
       try {
-        const interview = await Interview.findById(interviewId).populate(
-          "resumeId"
-        );
+        const interview =
+          await Interview.findById(interviewId).populate("resumeId");
 
         if (!interview) {
           socket.emit("error", { message: "Interview not found" });
@@ -220,7 +219,7 @@ export default function initInterviewSocket(httpServer) {
 
         // Count how many questions the AI has asked so far
         const aiMessageCount = interview.messages.filter(
-          (m) => m.role === "model"
+          (m) => m.role === "model",
         ).length;
         const isLastQuestion = aiMessageCount >= questionLimit - 1;
 
@@ -311,7 +310,7 @@ Rules:
 
         socket.emit("aiResponseComplete", { fullResponse }); // ── If question limit reached → generate feedback & end ──
         const updatedAiCount = interview.messages.filter(
-          (m) => m.role === "model"
+          (m) => m.role === "model",
         ).length;
 
         if (updatedAiCount >= questionLimit) {
@@ -321,12 +320,12 @@ Rules:
           const locked = await Interview.findOneAndUpdate(
             { _id: interviewId, status: "ongoing" },
             { $set: { status: "completing" } },
-            { new: false }
+            { new: false },
           ).populate("resumeId");
 
           if (!locked) {
             console.log(
-              "⚡ chatMessage completion: already completed/locked, skipping"
+              "⚡ chatMessage completion: already completed/locked, skipping",
             );
             return;
           }
@@ -360,6 +359,7 @@ Rules:
           await Interview.findByIdAndUpdate(interviewId, {
             $set: {
               status: "completed",
+              terminationReason: "completed",
               feedback,
               atsScore,
               keywords,
@@ -395,14 +395,14 @@ Rules:
         const locked = await Interview.findOneAndUpdate(
           { _id: interviewId, status: "ongoing" },
           { $set: { status: "completing" } },
-          { new: false } // return OLD doc so we can read messages / resumeId
+          { new: false }, // return OLD doc so we can read messages / resumeId
         ).populate("resumeId");
 
         if (!locked) {
           // Either not found OR another request already locked / completed it
           console.log(
             "⚡ endInterview: already completed/locked, skipping:",
-            interviewId
+            interviewId,
           );
           // If it's already fully completed, re-emit the stored result to this socket
           const done = await Interview.findById(interviewId);
@@ -448,6 +448,7 @@ Rules:
         await Interview.findByIdAndUpdate(interviewId, {
           $set: {
             status: "completed",
+            terminationReason: "manual",
             feedback,
             atsScore,
             keywords,
@@ -461,6 +462,98 @@ Rules:
         socket.emit("error", { message: "Failed to end interview" });
       } finally {
         // Clear the lock so the socket can end a *different* interview later
+        delete socket._endingInterview;
+      }
+    });
+
+    // ──────────────────────────────────────────
+    // EVENT: tabSwitchViolation
+    // ──────────────────────────────────────────
+    socket.on("tabSwitchViolation", async ({ interviewId }) => {
+      if (socket._endingInterview === interviewId) {
+        console.log(
+          "⚡ Duplicate tabSwitchViolation ignored for:",
+          interviewId,
+        );
+        return;
+      }
+      socket._endingInterview = interviewId;
+
+      try {
+        // ── Atomic status-lock ──
+        const locked = await Interview.findOneAndUpdate(
+          { _id: interviewId, status: "ongoing" },
+          { $set: { status: "completing" } },
+          { new: false },
+        ).populate("resumeId");
+
+        if (!locked) {
+          console.log(
+            "⚡ tabSwitchViolation: already completed/locked, skipping:",
+            interviewId,
+          );
+          const done = await Interview.findById(interviewId);
+          if (done?.status === "completed" && done?.feedback) {
+            socket.emit("interviewTerminated", {
+              reason: "tab_switch",
+              feedback: done.feedback,
+              atsScore: done.atsScore,
+              keywords: done.keywords ?? [],
+            });
+          }
+          return;
+        }
+
+        console.log("🚨 Tab-switch violation detected for:", interviewId);
+
+        const feedback = await generateFeedback(genAI, locked.messages);
+
+        let atsScore = null;
+        let keywords = [];
+        const resumeText = locked.resumeId?.textContent || "";
+
+        if (resumeText && locked.jobDescription) {
+          try {
+            const [atsRes, kwRes] = await Promise.all([
+              axios.post(ATS_SERVICE_URL, {
+                jd: locked.jobDescription,
+                resume: resumeText,
+              }),
+              axios.post(KEYWORDS_URL, {
+                jd: locked.jobDescription,
+              }),
+            ]);
+            atsScore = atsRes.data.ats_score ?? null;
+            keywords = kwRes.data.keywords ?? [];
+          } catch (atsErr) {
+            console.warn("⚠️ ATS/Keywords service error:", atsErr.message);
+          }
+        }
+
+        await Interview.findByIdAndUpdate(interviewId, {
+          $set: {
+            status: "completed",
+            tabSwitchDetected: true,
+            terminationReason: "tab_switch",
+            feedback,
+            atsScore,
+            keywords,
+          },
+        });
+
+        socket.emit("interviewTerminated", {
+          reason: "tab_switch",
+          feedback,
+          atsScore,
+          keywords,
+        });
+        console.log("✅ Interview terminated (tab switch):", interviewId);
+      } catch (error) {
+        console.error("tabSwitchViolation Error:", error);
+        socket.emit("error", {
+          message: "Failed to process tab switch violation",
+        });
+      } finally {
         delete socket._endingInterview;
       }
     });

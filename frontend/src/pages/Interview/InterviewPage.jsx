@@ -2,13 +2,13 @@ import React from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import InterviewSession from "../../components/interview/InterviewSession";
+import { FileText, ArrowLeft } from "lucide-react";
 
 const InterviewPage = () => {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  // resumeId can come from URL param OR from the logged-in user's profile
   const resumeId = params.get("resumeId") || user?.resumeId || "";
   const jobDescription = params.get("jd")
     ? decodeURIComponent(params.get("jd"))
@@ -17,64 +17,40 @@ const InterviewPage = () => {
 
   if (!resumeId) {
     return (
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          height: "100vh",
-          background: "#0f0f0f",
-          color: "#e8e8e8",
-          fontFamily: "Inter, sans-serif",
-          flexDirection: "column",
-          gap: 16,
-          textAlign: "center",
-          padding: "0 24px",
-        }}
-      >
-        <h2>No Resume Found</h2>
-        <p style={{ color: "#8892b0", fontSize: 14, maxWidth: 400 }}>
-          You need to upload a resume before starting an interview. Go to your
-          profile and upload a PDF resume first.
-        </p>
-        <div style={{ display: "flex", gap: 12 }}>
-          <button
-            onClick={() => navigate("/profile")}
-            style={{
-              padding: "10px 24px",
-              background: "linear-gradient(135deg, #00d4ff, #7c3aed)",
-              border: "none",
-              borderRadius: 8,
-              color: "#fff",
-              fontSize: 14,
-              fontWeight: 600,
-              cursor: "pointer",
-            }}
-          >
-            Upload Resume
-          </button>
-          <button
-            onClick={() => navigate(-1)}
-            style={{
-              padding: "10px 24px",
-              background: "rgba(255,255,255,0.08)",
-              border: "1px solid rgba(255,255,255,0.12)",
-              borderRadius: 8,
-              color: "#e8e8e8",
-              fontSize: 14,
-              fontWeight: 600,
-              cursor: "pointer",
-            }}
-          >
-            Go Back
-          </button>
+      <div className="flex items-center justify-center h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50">
+        <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-8 max-w-md w-full text-center mx-4">
+          <div className="w-14 h-14 bg-blue-50 border border-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <FileText className="w-6 h-6 text-blue-500" />
+          </div>
+          <h2 className="text-lg font-bold text-slate-900 mb-2">
+            No Resume Found
+          </h2>
+          <p className="text-sm text-slate-500 mb-6 leading-relaxed">
+            You need to upload a resume before starting an interview. Go to your
+            profile and upload a PDF resume first.
+          </p>
+          <div className="flex gap-3">
+            <button
+              onClick={() => navigate(-1)}
+              className="flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-semibold text-slate-600 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Go Back
+            </button>
+            <button
+              onClick={() => navigate("/profile")}
+              className="flex-1 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 rounded-xl transition-all shadow-sm shadow-blue-200"
+            >
+              Upload Resume
+            </button>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div style={{ width: "100vw", height: "100vh" }}>
+    <div className="w-screen h-screen">
       <InterviewSession
         resumeId={resumeId}
         jobDescription={jobDescription}
