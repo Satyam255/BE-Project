@@ -11,11 +11,11 @@ The platform uses a service-oriented architecture divided into three main compon
 - **Node.js Core Backend (Express)**: Serves as the primary orchestrator handling user authentication, RESTful routing, and database interactions (MongoDB). It uses WebSockets via Socket.io to manage live, bi-directional communication during AI interviews, and integrates with Judge0 for code execution.
 - **Python AI Microservice**: Offloads heavy NLP and machine learning processes. It calculates candidate ATS scores using resume parsing (\ts_service.py\) and handles dynamic question generation (\question_selector.py\).
 
-## Data Flow
+## Data Flow (AI Agent Orchestration Diagram)
 
 The system manages workflows for **ATS Parsing** and **Live AI Interviews**. Nodes in the workflow include real-time browser WebRTC communication, websocket streams to the Node.js backend, LLM parsing, scoring handled by the Python microservice, and code evaluation handled by isolated Docker containers.
 
-_(You can add an architecture diagram image here)_
+![AI Agent Orchestration Diagram](./AI_agent_architecture.png)
 
 ## Getting Started
 
