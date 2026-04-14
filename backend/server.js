@@ -37,11 +37,11 @@ const server = http.createServer(app);
 // );
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: ["http://localhost:5173", "https://usehirely.vercel.app"],
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
-  }),
+  })
 );
 app.options(/.*/, cors()); // ✅ use regex instead of string to handle preflight requests for all routes
 

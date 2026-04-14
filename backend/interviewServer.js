@@ -103,7 +103,7 @@ async function generateFeedback(genAI, interviewHistory) {
 export default function initInterviewSocket(httpServer) {
   const io = new Server(httpServer, {
     cors: {
-      origin: "*",
+      origin: ["http://localhost:5173", "https://usehirely.vercel.app"],
       methods: ["GET", "POST"],
     },
   });
@@ -128,7 +128,7 @@ export default function initInterviewSocket(httpServer) {
           console.log("   Question Limit:", limit || 5);
           console.log(
             "   JD provided:",
-            jobDescription ? "Yes" : "No (using dummy)",
+            jobDescription ? "Yes" : "No (using dummy)"
           );
 
           const jdToUse = jobDescription || DUMMY_JD;
@@ -148,13 +148,13 @@ export default function initInterviewSocket(httpServer) {
               console.log("\n✅ QUESTIONS SELECTED:");
               console.log(
                 "   Keywords:",
-                qsResult.keywords?.map((k) => k.keyword).join(", "),
+                qsResult.keywords?.map((k) => k.keyword).join(", ")
               );
               selectedQuestions.forEach((q, i) => {
                 console.log(
                   `   ${i + 1}. [${q.difficulty}] [${q.topic}] sim=${
                     q.similarity
-                  }`,
+                  }`
                 );
                 console.log(`      Q: ${q.question}`);
               });
@@ -196,7 +196,7 @@ export default function initInterviewSocket(httpServer) {
           console.error("joinInterview Error:", error);
           socket.emit("error", { message: "Failed to start interview" });
         }
-      },
+      }
     );
 
     // ──────────────────────────────────────────
@@ -204,8 +204,9 @@ export default function initInterviewSocket(httpServer) {
     // ──────────────────────────────────────────
     socket.on("chatMessage", async ({ message, interviewId }) => {
       try {
-        const interview =
-          await Interview.findById(interviewId).populate("resumeId");
+        const interview = await Interview.findById(interviewId).populate(
+          "resumeId"
+        );
 
         if (!interview) {
           socket.emit("error", { message: "Interview not found" });
@@ -219,7 +220,7 @@ export default function initInterviewSocket(httpServer) {
 
         // Count how many questions the AI has asked so far
         const aiMessageCount = interview.messages.filter(
-          (m) => m.role === "model",
+          (m) => m.role === "model"
         ).length;
         const isLastQuestion = aiMessageCount >= questionLimit - 1;
 
@@ -310,7 +311,7 @@ Rules:
 
         socket.emit("aiResponseComplete", { fullResponse }); // ── If question limit reached → generate feedback & end ──
         const updatedAiCount = interview.messages.filter(
-          (m) => m.role === "model",
+          (m) => m.role === "model"
         ).length;
 
         if (updatedAiCount >= questionLimit) {
@@ -320,12 +321,12 @@ Rules:
           const locked = await Interview.findOneAndUpdate(
             { _id: interviewId, status: "ongoing" },
             { $set: { status: "completing" } },
-            { new: false },
+            { new: false }
           ).populate("resumeId");
 
           if (!locked) {
             console.log(
-              "⚡ chatMessage completion: already completed/locked, skipping",
+              "⚡ chatMessage completion: already completed/locked, skipping"
             );
             return;
           }
@@ -395,14 +396,14 @@ Rules:
         const locked = await Interview.findOneAndUpdate(
           { _id: interviewId, status: "ongoing" },
           { $set: { status: "completing" } },
-          { new: false }, // return OLD doc so we can read messages / resumeId
+          { new: false } // return OLD doc so we can read messages / resumeId
         ).populate("resumeId");
 
         if (!locked) {
           // Either not found OR another request already locked / completed it
           console.log(
             "⚡ endInterview: already completed/locked, skipping:",
-            interviewId,
+            interviewId
           );
           // If it's already fully completed, re-emit the stored result to this socket
           const done = await Interview.findById(interviewId);
@@ -473,7 +474,7 @@ Rules:
       if (socket._endingInterview === interviewId) {
         console.log(
           "⚡ Duplicate tabSwitchViolation ignored for:",
-          interviewId,
+          interviewId
         );
         return;
       }
@@ -484,13 +485,13 @@ Rules:
         const locked = await Interview.findOneAndUpdate(
           { _id: interviewId, status: "ongoing" },
           { $set: { status: "completing" } },
-          { new: false },
+          { new: false }
         ).populate("resumeId");
 
         if (!locked) {
           console.log(
             "⚡ tabSwitchViolation: already completed/locked, skipping:",
-            interviewId,
+            interviewId
           );
           const done = await Interview.findById(interviewId);
           if (done?.status === "completed" && done?.feedback) {
