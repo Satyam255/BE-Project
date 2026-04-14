@@ -1,4 +1,8 @@
 import nodemailer from "nodemailer";
+import { Resend } from "resend";
+
+const resendApiKey = process.env.RESEND_API_KEY || "";
+const resendClient = resendApiKey ? new Resend(resendApiKey) : null;
 
 const transport465 = nodemailer.createTransport({
     host: "smtp.gmail.com",
@@ -28,11 +32,30 @@ const transport587 = nodemailer.createTransport({
 });
 
 export const sendMailWithFallback = async (mailOptions) => {
+    const resolvedMail = {
+        ...mailOptions,
+        from: mailOptions.from || process.env.EMAIL_FROM || process.env.EMAIL_USER
+    };
+
+    if (resendClient) {
+        await resendClient.emails.send({
+            from: resolvedMail.from,
+            to: resolvedMail.to,
+            subject: resolvedMail.subject,
+            html: resolvedMail.html,
+            text: resolvedMail.text,
+            cc: resolvedMail.cc,
+            bcc: resolvedMail.bcc,
+            reply_to: resolvedMail.replyTo
+        });
+        return;
+    }
+
     try {
-        await transport465.sendMail(mailOptions);
+        await transport465.sendMail(resolvedMail);
     } catch (error) {
         console.warn("SMTP 465 failed, retrying on 587:", error?.message || error);
-        await transport587.sendMail(mailOptions);
+        await transport587.sendMail(resolvedMail);
     }
 };
 
