@@ -6,7 +6,10 @@ import Resume from "./models/resume.model.js";
 
 // ── CONFIG ──
 const PYTHON_SERVICE =
-  process.env.PYTHON_MICROSERVICE_URL || "http://localhost:8000";
+  process.env.PYTHON_SERVER_URL ||
+  process.env.PYTHON_MICROSERVICE_URL ||
+  process.env.PYTHON_BASE ||
+  "http://localhost:8000";
 const QUESTION_SELECTOR_URL = `${PYTHON_SERVICE}/select_questions`;
 const ATS_SERVICE_URL = `${PYTHON_SERVICE}/calculate_weighted_score`;
 const KEYWORDS_URL = `${PYTHON_SERVICE}/extract_keywords`;

@@ -11,7 +11,11 @@ import nodemailer from "nodemailer";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const PYTHON_BASE = process.env.PYTHON_BASE || "http://localhost:8000";
+const PYTHON_BASE =
+  process.env.PYTHON_SERVER_URL ||
+  process.env.PYTHON_MICROSERVICE_URL ||
+  process.env.PYTHON_BASE ||
+  "http://localhost:8000";
 
 // ── Helper: compute ATS score from Python microservice ──
 // Accepts either a resumeId (looks up textContent) OR a direct resumeText string.
