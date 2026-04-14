@@ -11,7 +11,7 @@ services:
       - ./backend/.env
     environment:
       - PYTHON_SERVER_URL=http://python-server:8000
-    restart: unless-stopped
+    restart: always
     depends_on:
       - python-server
 
