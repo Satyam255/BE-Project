@@ -6,7 +6,7 @@ import Job from "../models/job.model.js";
 import Application from "../models/application.model.js";
 import Resume from "../models/resume.model.js";
 import { extractPdfText } from "./user.controller.js";
-import nodemailer from "nodemailer";
+import { sendMailWithFallback } from "../utils/emailService.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -413,17 +413,7 @@ export const sendInterviewInvite = async (req, res) => {
 
     const interviewLink = `${BASE_URL}/interview?resumeId=${resumeId}&jd=${encodedJD}&limit=5`;
 
-    // Email transporter
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-    });
-
-    // Send email
-    await transporter.sendMail({
+    await sendMailWithFallback({
       from: process.env.EMAIL_USER,
       to: app.applicant.email,
       subject: "AI Interview Invitation",

@@ -27,6 +27,15 @@ const transport587 = nodemailer.createTransport({
     socketTimeout: 20000
 });
 
+export const sendMailWithFallback = async (mailOptions) => {
+    try {
+        await transport465.sendMail(mailOptions);
+    } catch (error) {
+        console.warn("SMTP 465 failed, retrying on 587:", error?.message || error);
+        await transport587.sendMail(mailOptions);
+    }
+};
+
 export const sendInterviewEmail = async (to, jobTitle, interviewLink) => {
     const mailOptions = {
         from: process.env.EMAIL_USER,
@@ -40,10 +49,5 @@ export const sendInterviewEmail = async (to, jobTitle, interviewLink) => {
    `
     };
 
-    try {
-        await transport465.sendMail(mailOptions);
-    } catch (error) {
-        console.warn("SMTP 465 failed, retrying on 587:", error?.message || error);
-        await transport587.sendMail(mailOptions);
-    }
+    await sendMailWithFallback(mailOptions);
 };

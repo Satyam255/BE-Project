@@ -4,7 +4,7 @@ import AssessmentInvite from "../models/assessmentInvite.model.js";
 import AssessmentSubmission from "../models/assessmentSubmission.model.js";
 import User from "../models/user.model.js";
 import crypto from "crypto";
-import nodemailer from "nodemailer";
+import { sendMailWithFallback } from "../utils/emailService.js";
 
 // ----------------------------
 // Create Assessment (Employer)
@@ -243,15 +243,6 @@ export const sendAssessmentInvite = async (req, res) => {
       });
     }
 
-    // Setup email transporter once outside the loop
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-    });
-
     let sentCount = 0;
     let skippedCount = 0;
     const failedCandidates = [];
@@ -301,8 +292,7 @@ export const sendAssessmentInvite = async (req, res) => {
         // Build unique link for this candidate
         const assessmentLink = `${process.env.FRONTEND_URL}/assessment/${token}`;
 
-        // Send email
-        await transporter.sendMail({
+        await sendMailWithFallback({
           from: `"Job Portal" <${process.env.EMAIL_USER}>`,
           to: candidate.email,
           subject: "You have been invited to take an Online Assessment",
