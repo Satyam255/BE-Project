@@ -98,7 +98,7 @@ export const getEmployerAssessments = async (req, res) => {
 export const getAssessmentById = async (req, res) => {
   try {
     const assessment = await Assessment.findById(
-      req.params.assessmentId,
+      req.params.assessmentId
     ).populate("jobId", "title");
 
     if (!assessment) {
@@ -300,8 +300,12 @@ export const sendAssessmentInvite = async (req, res) => {
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
               <h2>Online Assessment Invitation</h2>
               <p>Dear ${candidate.name},</p>
-              <p>You have been invited to take an online assessment for <strong>${assessment.title}</strong>.</p>
-              <p><strong>Your ATS Score: ${application.atsScore}%</strong> — you have qualified for the next round.</p>
+              <p>You have been invited to take an online assessment for <strong>${
+                assessment.title
+              }</strong>.</p>
+              <p><strong>Your ATS Score: ${
+                application.atsScore
+              }%</strong> — you have qualified for the next round.</p>
               <p><strong>Assessment Details:</strong></p>
               <ul>
                 <li>Aptitude Questions: ${assessment.aptitudeCount}</li>
@@ -331,7 +335,7 @@ export const sendAssessmentInvite = async (req, res) => {
       } catch (candidateError) {
         console.error(
           `Failed for candidate ${candidateId}:`,
-          candidateError.message,
+          candidateError.message
         );
         failedCandidates.push(candidateId);
         continue;
