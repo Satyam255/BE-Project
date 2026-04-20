@@ -8,8 +8,19 @@ const resendClient = resendApiKey ? new Resend(resendApiKey) : null;
 const smtpUser = process.env.EMAIL_USER;
 const smtpPass = process.env.EMAIL_PASS;
 
-// This is your verified Resend sender address
-const fromAddress = "Hiring Team <noreply@hire-ly.tech>";
+// Preferred sender for Resend (must be from a verified domain)
+const resendFromAddress = process.env.RESEND_FROM || process.env.EMAIL_FROM || "";
+
+// Sender used when falling back to SMTP
+const smtpFromAddress = process.env.EMAIL_FROM || smtpUser || "";
+
+const extractEmail = (value = "") => {
+  const trimmed = String(value).trim();
+  const match = trimmed.match(/<([^>]+)>/);
+  return (match?.[1] || trimmed).toLowerCase();
+};
+
+const isGmailAddress = (value = "") => extractEmail(value).endsWith("@gmail.com");
 
 const transport465 = nodemailer.createTransport({
   host: "smtp.gmail.com",
@@ -39,15 +50,38 @@ const transport587 = nodemailer.createTransport({
 });
 
 export const sendMailWithFallback = async (mailOptions) => {
-  const resolvedMail = {
-    ...mailOptions,
-    from: mailOptions.from || fromAddress,
-  };
-
   if (resendClient) {
-    await resendClient.emails.send(resolvedMail);
+    const resendFrom = mailOptions.from || resendFromAddress;
+
+    if (!resendFrom) {
+      throw new Error(
+        "RESEND_FROM (or EMAIL_FROM) is required when RESEND_API_KEY is configured"
+      );
+    }
+
+    if (isGmailAddress(resendFrom)) {
+      throw new Error(
+        "Resend sender must be on a verified domain. Do not use a gmail.com from address"
+      );
+    }
+
+    await resendClient.emails.send({
+      ...mailOptions,
+      from: resendFrom,
+    });
     return;
   }
+
+  if (!smtpFromAddress && !mailOptions.from) {
+    throw new Error(
+      "EMAIL_USER or EMAIL_FROM is required for SMTP fallback when Resend is not configured"
+    );
+  }
+
+  const resolvedMail = {
+    ...mailOptions,
+    from: mailOptions.from || smtpFromAddress,
+  };
 
   // Fallback to SMTP if Resend is not configured
   try {
@@ -60,7 +94,6 @@ export const sendMailWithFallback = async (mailOptions) => {
 
 export const sendInterviewEmail = async (to, jobTitle, interviewLink) => {
   const mailOptions = {
-    from: fromAddress,
     to: to,
     subject: "AI Interview Invitation",
     html: `

@@ -293,7 +293,6 @@ export const sendAssessmentInvite = async (req, res) => {
         const assessmentLink = `${process.env.FRONTEND_URL}/assessment/${token}`;
 
         await sendMailWithFallback({
-          from: `"Job Portal" <${process.env.EMAIL_USER}>`,
           to: candidate.email,
           subject: "You have been invited to take an Online Assessment",
           html: `

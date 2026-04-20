@@ -87,7 +87,6 @@ async function saveAtsResult(applicationId, atsResult) {
 
 export const applyToJob = async (req, res) => {
   try {
-
     const job = await Job.findById(req.params.jobId).select(
       "description requirements company"
     );
@@ -115,7 +114,7 @@ export const applyToJob = async (req, res) => {
       applicant: req.user._id,
       resume: resumeObjectId,
     }); // Compute ATS score asynchronously — don't block the response
-    
+
     if (job && resumeObjectId) {
       const jd = `${job.description}\n${job.requirements}`;
       computeAtsScore(resumeObjectId, jd)
@@ -269,15 +268,15 @@ export const updateStatus = async (req, res) => {
 //       to: app.applicant.email,
 //       subject: "AI Interview Invitation",
 //       html: `<div style="padding:40px 34px;text-align:center;color:#374151;">
-  
+
 //   <h2 style="font-size:24px;margin-bottom:10px;">
 //     Hi ${app.applicant.name},
 //   </h2>
 
 //   <p style="font-size:17px;line-height:1.7;margin-bottom:18px;">
-//     Congratulations! After reviewing your application, 
-//     <b>${req.user.name}</b> from <b>${req.user.companyName || "the company"}</b> 
-//     has shortlisted you for the next stage of the hiring process for the position of 
+//     Congratulations! After reviewing your application,
+//     <b>${req.user.name}</b> from <b>${req.user.companyName || "the company"}</b>
+//     has shortlisted you for the next stage of the hiring process for the position of
 //     <b style="color:#4f46e5;">${app.job.title}</b>.
 //   </p>
 
@@ -340,7 +339,7 @@ export const updateStatus = async (req, res) => {
 //       line-height:1.6;
 //       text-align:center;
 //   ">
-//     ⏱ The interview will take approximately <b>5–10 minutes</b>.  
+//     ⏱ The interview will take approximately <b>5–10 minutes</b>.
 //     Please complete it at your earliest convenience.
 //   </p>
 
@@ -395,8 +394,7 @@ export const sendInterviewInvite = async (req, res) => {
 
     // Get resumeId (from Application or fallback to User)
     const resumeId =
-      app.resume?._id?.toString() ||
-      app.applicant?.resumeId?.toString();
+      app.resume?._id?.toString() || app.applicant?.resumeId?.toString();
 
     if (!resumeId) {
       return res.status(400).json({
@@ -414,7 +412,6 @@ export const sendInterviewInvite = async (req, res) => {
     const interviewLink = `${BASE_URL}/interview?resumeId=${resumeId}&jd=${encodedJD}&limit=5`;
 
     await sendMailWithFallback({
-      from: process.env.EMAIL_USER,
       to: app.applicant.email,
       subject: "AI Interview Invitation",
       html: `<div style="background:#f3f4f6;padding:40px 0;font-family:Arial,Helvetica,sans-serif;">
@@ -544,7 +541,9 @@ export const sendInterviewInvite = async (req, res) => {
         font-size:13px;
     ">
       <p style="margin:0;">
-        This is an automated message from <b>${req.user.companyName || "Hiring Team"}</b>
+        This is an automated message from <b>${
+          req.user.companyName || "Hiring Team"
+        }</b>
       </p>
 
       <p style="margin-top:6px;">
@@ -552,13 +551,15 @@ export const sendInterviewInvite = async (req, res) => {
       </p>
 
       <p style="margin-top:10px;font-size:12px;color:#9ca3af;">
-        © ${new Date().getFullYear()} ${req.user.companyName || "Recruitment System"}  
+        © ${new Date().getFullYear()} ${
+        req.user.companyName || "Recruitment System"
+      }  
         All rights reserved.
       </p>
     </div>
 
   </div>
-</div>`
+</div>`,
     });
 
     // Update DB
@@ -569,7 +570,6 @@ export const sendInterviewInvite = async (req, res) => {
       message: "AI Interview invitation sent",
       applicationId: app._id,
     });
-
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: error.message });
