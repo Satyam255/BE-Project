@@ -29,6 +29,12 @@ const interviewSchema = new mongoose.Schema({
     summary: String,
   },
   atsScore: { type: Number, default: null },
+  tabSwitchDetected: { type: Boolean, default: false },
+  terminationReason: {
+    type: String,
+    enum: ["completed", "manual", "tab_switch", null],
+    default: null,
+  },
   keywords: [
     {
       keyword: String,

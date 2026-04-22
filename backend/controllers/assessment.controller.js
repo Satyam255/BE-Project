@@ -4,7 +4,7 @@ import AssessmentInvite from "../models/assessmentInvite.model.js";
 import AssessmentSubmission from "../models/assessmentSubmission.model.js";
 import User from "../models/user.model.js";
 import crypto from "crypto";
-import nodemailer from "nodemailer";
+import { sendMailWithFallback } from "../utils/emailService.js";
 
 // ----------------------------
 // Create Assessment (Employer)
@@ -98,7 +98,7 @@ export const getEmployerAssessments = async (req, res) => {
 export const getAssessmentById = async (req, res) => {
   try {
     const assessment = await Assessment.findById(
-      req.params.assessmentId,
+      req.params.assessmentId
     ).populate("jobId", "title");
 
     if (!assessment) {
@@ -243,15 +243,6 @@ export const sendAssessmentInvite = async (req, res) => {
       });
     }
 
-    // Setup email transporter once outside the loop
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-    });
-
     let sentCount = 0;
     let skippedCount = 0;
     const failedCandidates = [];
@@ -313,17 +304,19 @@ export const sendAssessmentInvite = async (req, res) => {
         // Build unique link for this candidate
         const assessmentLink = `${process.env.FRONTEND_URL}/assessment/${token}`;
 
-        // Send email
-        await transporter.sendMail({
-          from: `"Job Portal" <${process.env.EMAIL_USER}>`,
+        await sendMailWithFallback({
           to: candidate.email,
           subject: "You have been invited to take an Online Assessment",
           html: `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
               <h2>Online Assessment Invitation</h2>
               <p>Dear ${candidate.name},</p>
-              <p>You have been invited to take an online assessment for <strong>${assessment.title}</strong>.</p>
-              <p><strong>Your ATS Score: ${application.atsScore}%</strong> — you have qualified for the next round.</p>
+              <p>You have been invited to take an online assessment for <strong>${
+                assessment.title
+              }</strong>.</p>
+              <p><strong>Your ATS Score: ${
+                application.atsScore
+              }%</strong> — you have qualified for the next round.</p>
               <p><strong>Assessment Details:</strong></p>
               <ul>
                 <li>Aptitude Questions: ${assessment.aptitudeCount}</li>
@@ -353,7 +346,7 @@ export const sendAssessmentInvite = async (req, res) => {
       } catch (candidateError) {
         console.error(
           `Failed for candidate ${candidateId}:`,
-          candidateError.message,
+          candidateError.message
         );
         failedCandidates.push(candidateId);
         continue;

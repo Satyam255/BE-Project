@@ -6,7 +6,10 @@ import Resume from "./models/resume.model.js";
 
 // ── CONFIG ──
 const PYTHON_SERVICE =
-  process.env.PYTHON_MICROSERVICE_URL || "http://localhost:8000";
+  process.env.PYTHON_SERVER_URL ||
+  process.env.PYTHON_MICROSERVICE_URL ||
+  process.env.PYTHON_BASE ||
+  "http://localhost:8000";
 const QUESTION_SELECTOR_URL = `${PYTHON_SERVICE}/select_questions`;
 const ATS_SERVICE_URL = `${PYTHON_SERVICE}/calculate_weighted_score`;
 const KEYWORDS_URL = `${PYTHON_SERVICE}/extract_keywords`;
@@ -103,7 +106,7 @@ async function generateFeedback(genAI, interviewHistory) {
 export default function initInterviewSocket(httpServer) {
   const io = new Server(httpServer, {
     cors: {
-      origin: "*",
+      origin: ["http://localhost:5173", "https://usehirely.vercel.app"],
       methods: ["GET", "POST"],
     },
   });
@@ -360,6 +363,7 @@ Rules:
           await Interview.findByIdAndUpdate(interviewId, {
             $set: {
               status: "completed",
+              terminationReason: "completed",
               feedback,
               atsScore,
               keywords,
@@ -448,6 +452,7 @@ Rules:
         await Interview.findByIdAndUpdate(interviewId, {
           $set: {
             status: "completed",
+            terminationReason: "manual",
             feedback,
             atsScore,
             keywords,
@@ -461,6 +466,98 @@ Rules:
         socket.emit("error", { message: "Failed to end interview" });
       } finally {
         // Clear the lock so the socket can end a *different* interview later
+        delete socket._endingInterview;
+      }
+    });
+
+    // ──────────────────────────────────────────
+    // EVENT: tabSwitchViolation
+    // ──────────────────────────────────────────
+    socket.on("tabSwitchViolation", async ({ interviewId }) => {
+      if (socket._endingInterview === interviewId) {
+        console.log(
+          "⚡ Duplicate tabSwitchViolation ignored for:",
+          interviewId
+        );
+        return;
+      }
+      socket._endingInterview = interviewId;
+
+      try {
+        // ── Atomic status-lock ──
+        const locked = await Interview.findOneAndUpdate(
+          { _id: interviewId, status: "ongoing" },
+          { $set: { status: "completing" } },
+          { new: false }
+        ).populate("resumeId");
+
+        if (!locked) {
+          console.log(
+            "⚡ tabSwitchViolation: already completed/locked, skipping:",
+            interviewId
+          );
+          const done = await Interview.findById(interviewId);
+          if (done?.status === "completed" && done?.feedback) {
+            socket.emit("interviewTerminated", {
+              reason: "tab_switch",
+              feedback: done.feedback,
+              atsScore: done.atsScore,
+              keywords: done.keywords ?? [],
+            });
+          }
+          return;
+        }
+
+        console.log("🚨 Tab-switch violation detected for:", interviewId);
+
+        const feedback = await generateFeedback(genAI, locked.messages);
+
+        let atsScore = null;
+        let keywords = [];
+        const resumeText = locked.resumeId?.textContent || "";
+
+        if (resumeText && locked.jobDescription) {
+          try {
+            const [atsRes, kwRes] = await Promise.all([
+              axios.post(ATS_SERVICE_URL, {
+                jd: locked.jobDescription,
+                resume: resumeText,
+              }),
+              axios.post(KEYWORDS_URL, {
+                jd: locked.jobDescription,
+              }),
+            ]);
+            atsScore = atsRes.data.ats_score ?? null;
+            keywords = kwRes.data.keywords ?? [];
+          } catch (atsErr) {
+            console.warn("⚠️ ATS/Keywords service error:", atsErr.message);
+          }
+        }
+
+        await Interview.findByIdAndUpdate(interviewId, {
+          $set: {
+            status: "completed",
+            tabSwitchDetected: true,
+            terminationReason: "tab_switch",
+            feedback,
+            atsScore,
+            keywords,
+          },
+        });
+
+        socket.emit("interviewTerminated", {
+          reason: "tab_switch",
+          feedback,
+          atsScore,
+          keywords,
+        });
+        console.log("✅ Interview terminated (tab switch):", interviewId);
+      } catch (error) {
+        console.error("tabSwitchViolation Error:", error);
+        socket.emit("error", {
+          message: "Failed to process tab switch violation",
+        });
+      } finally {
         delete socket._endingInterview;
       }
     });
