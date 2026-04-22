@@ -26,7 +26,7 @@ const MyApplications = () => {
     try {
       setLoading(true);
       const res = await axiosInstance.get(
-        API_PATHS.APPLICATIONS.GET_MY_APPLICATIONS
+        API_PATHS.APPLICATIONS.GET_MY_APPLICATIONS,
       );
       setApplications(res.data || []);
     } catch (err) {
@@ -42,9 +42,19 @@ const MyApplications = () => {
 
   const handleStartInterview = (app) => {
     const jd = encodeURIComponent(
-      `${app.job?.description || ""}\n${app.job?.requirements || ""}`
+      `${app.job?.description || ""}\n${app.job?.requirements || ""}`,
     );
     navigate(`/interview?resumeId=${user?.resumeId || ""}&jd=${jd}&limit=5`);
+  };
+
+  // ✅ NEW: navigate to assessment instructions page
+  const handleStartAssessment = (app) => {
+    navigate(`/assessment/${app.assessmentToken}`);
+  };
+
+  // ✅ REPLACE WITH THIS
+  const handleViewResult = (app) => {
+    navigate(`/assessment/${app.assessmentToken}/result`);
   };
 
   const atsColour = (score) => {
@@ -153,7 +163,7 @@ const MyApplications = () => {
                         {app.atsScore != null ? (
                           <span
                             className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${atsColour(
-                              app.atsScore
+                              app.atsScore,
                             )}`}
                           >
                             ATS Score: {app.atsScore.toFixed(1)}%
@@ -170,12 +180,26 @@ const MyApplications = () => {
                             Interview Unlocked
                           </span>
                         )}
+                        {/* ✅ NEW: assessment invite badge */}
+                        {app.assessmentInvited && (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-700">
+                            <FileText className="h-3 w-3" />
+                            Assessment Invited
+                          </span>
+                        )}
+                        {/* ✅ NEW: assessment passed badge */}
+                        {app.assessmentPassed && (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">
+                            ✓ Assessment Passed
+                          </span>
+                        )}
                       </div>
                     </div>
 
                     {/* Right — Start AI Interview button */}
                     <div className="shrink-0">
                       {app.interviewInvited ? (
+                        // ✅ invited — show Start button
                         <button
                           onClick={() => handleStartInterview(app)}
                           className="flex items-center gap-2 px-5 py-2.5 bg-purple-600 text-white text-sm font-semibold rounded-xl hover:bg-purple-700 shadow-md shadow-purple-200 transition"
@@ -183,11 +207,56 @@ const MyApplications = () => {
                           <Bot className="h-4 w-4" />
                           Start AI Interview
                         </button>
+                      ) : app.assessmentPassed ? (
+                        // ✅ NEW — passed assessment, auto unlocked
+                        <button
+                          onClick={() => handleStartInterview(app)}
+                          className="flex items-center gap-2 px-5 py-2.5 bg-purple-600 text-white text-sm font-semibold rounded-xl hover:bg-purple-700 shadow-md shadow-purple-200 transition"
+                        >
+                          <Bot className="h-4 w-4" />
+                          Start AI Interview
+                        </button>
+                      ) : app.assessmentSubmitted && !app.assessmentPassed ? (
+                        // ✅ NEW — submitted but failed assessment
+                        <div className="flex items-center gap-2 px-5 py-2.5 bg-red-50 text-red-400 text-sm font-medium rounded-xl border border-red-100 select-none">
+                          <Bot className="h-4 w-4" />
+                          Assessment Failed
+                        </div>
                       ) : (
+                        // default — awaiting invite
                         <div className="flex items-center gap-2 px-5 py-2.5 bg-gray-100 text-gray-400 text-sm font-medium rounded-xl cursor-not-allowed select-none">
                           <Bot className="h-4 w-4" />
                           Awaiting Invite
                         </div>
+                      )}
+                    </div>
+                    {/* ✅ UPDATED: assessment button — 3 states */}
+                    <div className="shrink-0 flex flex-col gap-2 items-end">
+                      {!app.assessmentInvited ? (
+                        // State 1 — no invite yet
+                        <div className="flex items-center gap-2 px-5 py-2.5 bg-gray-100 text-gray-400 text-sm font-medium rounded-xl cursor-not-allowed select-none">
+                          <FileText className="h-4 w-4" />
+                          Awaiting Assessment
+                        </div>
+                      ) : app.assessmentSubmitted ? (
+                        // State 2 — submitted, show View Result button
+                        // ✅ CORRECT — clean, no removed variables referenced
+                        <button
+                          onClick={() => handleViewResult(app)}
+                          className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 text-white text-sm font-semibold rounded-xl hover:bg-emerald-700 shadow-md shadow-emerald-200 transition"
+                        >
+                          <FileText className="h-4 w-4" />
+                          View Result
+                        </button>
+                      ) : (
+                        // State 3 — invited but not submitted, show Start button
+                        <button
+                          onClick={() => handleStartAssessment(app)}
+                          className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-700 shadow-md shadow-indigo-200 transition"
+                        >
+                          <FileText className="h-4 w-4" />
+                          Start Assessment
+                        </button>
                       )}
                     </div>
                   </div>

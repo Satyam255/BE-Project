@@ -41,8 +41,28 @@ const applicationSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    // ✅ NEW — Assessment Invite flag
+    assessmentInvited: {
+      type: Boolean,
+      default: false,
+    },
+
+    // ✅ NEW — store the assessment token so candidate can click directly
+    assessmentToken: {
+      type: String,
+      default: null,
+    },
+    assessmentSubmitted: {
+      type: Boolean,
+      default: false,
+    },
+    // ✅ NEW
+    assessmentPassed: {
+      type: Boolean,
+      default: false,
+    },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 const Application = mongoose.model("Application", applicationSchema);

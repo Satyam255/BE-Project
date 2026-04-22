@@ -296,6 +296,7 @@ import {
 import { getInitials } from "../../utils/helper";
 import StatusBadge from "../StatusBadge";
 import moment from "moment";
+import { useNavigate } from "react-router-dom";
 
 const statusOptions = ["Applied", "Under Review", "Rejected", "Accepted"];
 
@@ -374,6 +375,7 @@ const ApplicantProfilePreview = ({
     selectedApplicant.interviewInvited || false,
   );
   const [inviting, setInviting] = useState(false);
+  const navigate = useNavigate();
 
   const onChangeStatus = async (e) => {
     const newStatus = e.target.value;
@@ -587,7 +589,6 @@ const ApplicantProfilePreview = ({
               <Download className="w-4 h-4" />
               Download Resume
             </button>
-
             {/* AI Interview invite */}
             {invited ? (
               <div className="w-full flex items-center justify-center gap-2 py-2.5 text-sm font-semibold text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-xl">
@@ -613,6 +614,35 @@ const ApplicantProfilePreview = ({
                 )}
               </button>
             )}
+            <button
+              onClick={async () => {
+                try {
+                  // Get assessments to find the one for this job
+                  const assessmentsRes = await axiosInstance.get(
+                    `/api/assessments/my-assessments`,
+                  );
+                  const assessments = assessmentsRes.data.assessments || [];
+                  const jobAssessment = assessments.find(
+                    (a) =>
+                      a.jobId?._id === selectedApplicant.job._id ||
+                      a.jobId === selectedApplicant.job._id,
+                  );
+                  if (!jobAssessment) {
+                    toast.error("No assessment found for this job.");
+                    return;
+                  }
+                  // Navigate to result page with assessmentId and candidateId
+                  navigate(
+                    `/employer/assessment-result/${jobAssessment._id}/${selectedApplicant.applicant._id}`,
+                  );
+                } catch (err) {
+                  toast.error("Failed to find assessment.");
+                }
+              }}
+              className="w-full flex items-center justify-center gap-2 py-2.5 text-sm font-semibold text-indigo-600 bg-indigo-50 border border-indigo-100 hover:bg-indigo-600 hover:text-white hover:border-indigo-600 rounded-xl transition-all duration-200"
+            >
+              📊 View Assessment Result
+            </button>
           </div>
 
           {/* Status change */}

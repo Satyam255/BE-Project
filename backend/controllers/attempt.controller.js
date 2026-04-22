@@ -3,6 +3,7 @@ import AssessmentSubmission from "../models/assessmentSubmission.model.js";
 import Assessment from "../models/assessment.model.js";
 import Question from "../models/questions.model.js";
 import axios from "axios";
+import Application from "../models/application.model.js";
 
 // ----------------------------
 // Validate Invite Token (Step 3)
@@ -717,6 +718,20 @@ export const submitAssessment = async (req, res) => {
     invite.status = "completed";
     invite.submittedAt = new Date();
     await invite.save();
+
+    // ✅ UPDATED — set assessmentPassed based on result
+    // also auto set interviewInvited if passed
+    await Application.findOneAndUpdate(
+      {
+        job: invite.jobId,
+        applicant: invite.candidateId,
+      },
+      {
+        assessmentSubmitted: true,
+        assessmentPassed: isPassed, // ✅ true if passed, false if failed
+        interviewInvited: isPassed ? true : false, // ✅ auto unlock interview if passed
+      },
+    );
 
     res.status(200).json({
       success: true,

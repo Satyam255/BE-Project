@@ -61,6 +61,9 @@ export default function AssessmentResult() {
 
   const { scores, totalMarks, isPassed, timeTaken, assessmentId } = result;
   const pct = getPct(scores.total, totalMarks);
+  const radius = 52;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (pct / 100) * circumference;
 
   const sectionBreakdown = [
     {
@@ -86,6 +89,13 @@ export default function AssessmentResult() {
   return (
     <div style={styles.page}>
       <div style={styles.container}>
+        {/* ✅ NEW: Back button */}
+        <button
+          onClick={() => navigate("/my-applications")}
+          style={styles.backBtn}
+        >
+          ← Back to My Applications
+        </button>
         {/* Result hero */}
         <div style={styles.hero}>
           <div
@@ -117,15 +127,15 @@ export default function AssessmentResult() {
               <circle
                 cx="60"
                 cy="60"
-                r="52"
+                r={radius}
                 fill="none"
                 stroke={isPassed ? "#10b981" : "#ef4444"}
                 strokeWidth="10"
                 strokeLinecap="round"
-                strokeDasharray={`${(pct / 100) * 326} 326`}
-                strokeDashoffset="81.5"
+                strokeDasharray={circumference}
+                strokeDashoffset={offset}
                 transform="rotate(-90 60 60)"
-                style={{ transition: "stroke-dasharray 1s ease" }}
+                style={{ transition: "stroke-dashoffset 0.6s ease" }}
               />
               <text
                 x="60"
@@ -453,5 +463,18 @@ const styles = {
     textAlign: "center",
     fontSize: "0.9rem",
     lineHeight: 1.6,
+  },
+  backBtn: {
+    background: "transparent",
+    border: "1px solid #334155",
+    color: "#94a3b8",
+    borderRadius: "8px",
+    padding: "0.5rem 1rem",
+    fontSize: "0.85rem",
+    cursor: "pointer",
+    marginBottom: "1.5rem",
+    display: "inline-flex",
+    alignItems: "center",
+    gap: "0.4rem",
   },
 };

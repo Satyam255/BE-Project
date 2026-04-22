@@ -30,6 +30,7 @@ import AssessmentInstructions from "./pages/Assessment/candidate/AssessmentInstr
 import AssessmentTest from "./pages/Assessment/candidate/AssessmentTest";
 import AssessmentResult from "./pages/Assessment/candidate/AssessmentResult";
 import EmployerAssessments from "./pages/Assessment/employer/EmployerAssessments";
+import EmployerAssessmentResult from "./pages/Employer/EmployerAssessmentResult";
 
 function App() {
   return (
@@ -85,6 +86,11 @@ function App() {
               <Route
                 path="/employer/assessments/:assessmentId/results"
                 element={<AssessmentResults />}
+              />
+              {/* ✅ ADD THIS RIGHT AFTER THE LINE ABOVE */}
+              <Route
+                path="/employer/assessment-result/:assessmentId/:candidateId"
+                element={<EmployerAssessmentResult />}
               />
             </Route>
             {/* Catch all route */}

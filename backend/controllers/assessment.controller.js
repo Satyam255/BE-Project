@@ -291,6 +291,18 @@ export const sendAssessmentInvite = async (req, res) => {
 
         await invite.save();
 
+        // ✅ ADD THIS — update application to mark assessment invited
+        await Application.findOneAndUpdate(
+          {
+            job: jobId,
+            applicant: candidateId,
+          },
+          {
+            assessmentInvited: true,
+            assessmentToken: token, // store token so frontend can use it
+          },
+        );
+
         // Get candidate details
         const candidate = await User.findById(candidateId);
         if (!candidate) {
