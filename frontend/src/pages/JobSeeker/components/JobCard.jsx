@@ -288,7 +288,7 @@ const JobCard = ({ job, onClick, onToggleSave, onApply, saved, hideApply }) => {
   const formatSalary = (min, max) => {
     const fmt = (num) =>
       num >= 1000 ? `₹${(num / 1000).toFixed(0)}k` : `₹${num}`;
-    return `${fmt(min)}/m`;
+    return `${fmt(min)}/yr`;
   };
 
   const handleApply = async (e) => {
