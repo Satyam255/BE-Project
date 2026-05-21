@@ -1,3 +1,4 @@
+import os
 import spacy
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -9,7 +10,7 @@ from transformers import pipeline, AutoTokenizer
 from ats_service import calculate_ats_score
 from question_selector import QuestionBank, extract_jd_keywords, get_questions_for_jd
 
-AI_DETECT_MODEL = "SzegedAI/roberta-base-bne-finetuned-ai-detection"
+AI_DETECT_MODEL = os.getenv("AI_DETECT_MODEL", "roberta-base-openai-detector")
 
 # ────────────────────────────────────────────
 # APP SETUP
